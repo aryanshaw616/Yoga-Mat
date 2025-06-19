@@ -5,53 +5,59 @@ import pyttsx3
 engine = pyttsx3.init("sapi5")
 voices = engine.getProperty("voices")
 engine.setProperty("voice", voices[0].id)
-rate = engine.setProperty("rate",170)
+engine.setProperty("rate", 170)
 
 def speak(audio):
     engine.say(audio)
     engine.runAndWait()
 
 def latestnews():
-    api_dict = {"business" :"" ,#Enter Your OWN API ,
-            "entertainment" : "",#Enter Your OWN API ,
-            "health" : "",#Enter Your OWN API,
-            "science" :"",#Enter Your OWN API,
-            "sports" :"",#Enter Your OWN API,
-            "technology" :""#Enter Your OWN API
-}
+    api_dict = {
+        "business": "YOUR_BUSINESS_API_URL",
+        "entertainment": "YOUR_ENTERTAINMENT_API_URL",
+        "health": "YOUR_HEALTH_API_URL",
+        "science": "YOUR_SCIENCE_API_URL",
+        "sports": "YOUR_SPORTS_API_URL",
+        "technology": "YOUR_TECHNOLOGY_API_URL"
+    }
 
-    content = None
-    url = None
-    speak("Which field news do you want, [business] , [health] , [technology], [sports] , [entertainment] , [science]")
-    field = input("Type field news that you want: ")
-    for key ,value in api_dict.items():
-        if key.lower() in field.lower():
-            url = value
-            print(url)
-            print("url was found")
-            break
-        else:
-            url = True
-    if url is True:
-        print("url not found")
+    speak("Which field news do you want? Business, Health, Technology, Sports, Entertainment, or Science?")
+    field = input("Enter the news category: ").strip().lower()
 
-    news = requests.get(url).text
-    news = json.loads(news)
-    speak("Here is the first news.")
+    url = api_dict.get(field)
+    if not url:
+        print("Invalid category or URL not found.")
+        speak("Invalid category. Please try again.")
+        return
 
-    arts = news["articles"]
-    for articles in arts :
-        article = articles["title"]
-        print(article)
-        speak(article)
-        news_url = articles["url"]
-        print(f"for more info visit: {news_url}")
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        news_data = response.json()
 
-        a = input("[press 1 to cont] and [press 2 to stop]")
-        if str(a) == "1":
-            pass
-        elif str(a) == "2":
-            break
+        if "articles" not in news_data or not news_data["articles"]:
+            speak("No news available at the moment.")
+            return
+
+        speak("Here is the first news.")
+
+        for article in news_data["articles"]:
+            title = article["title"]
+            print(title)
+            speak(title)
+
+            news_url = article.get("url", "No URL provided")
+            print(f"For more info, visit: {news_url}")
+
+            user_input = input("[Press 1 to continue, 2 to stop]: ")
+            if user_input == "2":
+                break
         
-    speak("thats all")
+        speak("That's all for now.")
 
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching news: {e}")
+        speak("Unable to fetch news at the moment.")
+
+if __name__ == "__main__":
+    latestnews()
